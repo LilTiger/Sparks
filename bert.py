@@ -110,6 +110,10 @@ class Bert_Blend_CNN(nn.Module):
         super(Bert_Blend_CNN, self).__init__()
         # 注 此处更改了config文件
         self.bert = BertModel.from_pretrained(model, output_hidden_states=True, return_dict=True, config=config)
+        # bert模型中的所有参数 也要参与微调 与 bert+lstm 方法一致
+        for param in self.bert.parameters():
+            param.requires_grad = True
+
         self.linear = nn.Linear(hidden_size, n_class)
         self.textcnn = TextCNN()
 
@@ -145,7 +149,7 @@ if __name__ == '__main__':
             optimizer.zero_grad()
             batch = tuple(p.to(device) for p in batch)
             pred = bert_blend_cnn([batch[0], batch[1], batch[2]])
-            print(batch[3].shape, pred.shape)
+            # print(batch[3].shape, pred.shape)
             loss = loss_fn(pred, batch[3])
             sum_loss += loss.item()
 
