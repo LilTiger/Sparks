@@ -10,7 +10,6 @@ example：
 
 # 将TAPE数据集文件夹 直接放在Sparks/data下即可
 # 注意 secondary_structure 下的split数据集有 train valid casp12 ts115 cb513 其它任务按需更改
-tape-eval transformer secondary_structure  --metrics accuracy --split casp12 --num_workers 0 --batch_size 4
+tape-eval transformer secondary_structure  'pretrained_models/bert-base-uncased' --metrics accuracy --split valid --num_workers 0 --batch_size 4
 
 tape-train transformer secondary_structure --num_workers 0 --batch_size 1
-
