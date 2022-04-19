@@ -25,8 +25,7 @@
 # df.to_csv('protein_pre.csv')
 # print(df)
 
-# 利用正则表达式寻找家族id对应sequence
-import re
+# 寻找家族id对应sequence
 import pandas as pd
 import csv
 import numpy as np
@@ -34,7 +33,8 @@ import tqdm
 
 csv_file = open('protein_pre.csv')
 reader = csv.reader(csv_file)
-df = pd.read_csv('protein_pre.csv')
+# read_csv方法默认会在开头加入新的unnamed列 设置index_col=0可以避免此现象
+df = pd.read_csv('protein_pre.csv', index_col=0)
 
 # 将id和sequence合并到一行 生成新列表 便于后续匹配
 new = []
