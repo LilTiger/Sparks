@@ -1,6 +1,14 @@
 # Transformer库 研究笔记
 bert-base-cased可以处理大写词汇 bert-base-uncased只能处理小写
 
+# 处理氨基酸序列时 直接添加词汇至vocab.txt不能成功将单个氨基酸分开 可用如下方法
+tokenizer.add_special_tokens({'additional_special_tokens': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 
+                                                    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']})
+## 还可打印查看添加的特殊token及其id
+print(tokenizer.additional_special_tokens)
+print(tokenizer.additional_special_tokens_ids)
+
+
 # bert-base-cased/uncased模型下的config.json文件为模型参数的 真实复制 更改config中vocab_size等参数无法真正更改模型架构 且只会报错
 ***
 custom模型参数的方法：直接在原始config.json文件夹中修改部分参数，复制一份保存到新的位置，在from_pretrained函数中利用config指令调用

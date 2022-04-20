@@ -36,6 +36,10 @@ def pretreatment(comments):
 
 result_comments = pretreatment(list(data['comment'].values))
 tokenizer = BertTokenizer.from_pretrained(model_path)
+# 此处增加对氨基酸序列的分词结构
+tokenizer.add_special_tokens({'additional_special_tokens': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+                                                                         'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+                                                                         'T', 'U', 'V', 'W', 'X', 'Y', 'Z']})
 result_comments_id = tokenizer(result_comments, padding=True, truncation=True, max_length=200, return_tensors='pt')
 X = result_comments_id['input_ids']
 y = torch.from_numpy(data['sentiment'].values).float()

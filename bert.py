@@ -38,6 +38,10 @@ labels = [1, 1, 1, 0, 0, 0]  # 1积极, 0消极.
 class MyDataset(Data.Dataset):
     def __init__(self, sentences, labels=None, with_labels=True, ):
         self.tokenizer = BertTokenizer.from_pretrained(model)
+        # 此处添加氨基酸序列分词结构
+        self.tokenizer.add_special_tokens({'additional_special_tokens': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
+                                                                         'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
+                                                                         'T', 'U', 'V', 'W', 'X', 'Y', 'Z']})
         self.with_labels = with_labels
         self.sentences = sentences
         self.labels = labels
