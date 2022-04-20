@@ -18,7 +18,7 @@ if use_cuda:
     print('using cuda device')
 
 data = pd.read_csv('./dianping.csv', encoding='utf-8')
-model_path = "pretrained_models/bert-base-chinese"
+model_path = "pretrained_models/bert-base-cased"
 
 torch.cuda.empty_cache()
 # 首先处理数据
@@ -268,4 +268,3 @@ if use_cuda:
     net.cuda()
 comment1 = ['菜品一般，不好吃']
 predict(net, comment1)
-

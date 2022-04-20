@@ -12,7 +12,7 @@ import torch.utils.data as Data
 import torch.nn.functional as F
 import torch.optim as optim
 import transformers
-from transformers import AutoModel, AutoTokenizer, BertModel, BertTokenizer
+from transformers import BertModel, BertTokenizer, BertConfig
 import matplotlib.pyplot as plt
 
 train_curve = []
@@ -21,7 +21,7 @@ config = './bert-custom/config.json'
 # # 定义一些参数，模型选择了最基础的bert中文模型
 batch_size = 12
 epoches = 100
-model = "./pretrained_models/bert-base-uncased"
+model = "./pretrained_models/bert-base-cased"
 hidden_size = 768
 n_class = 2
 maxlen = 8
@@ -159,12 +159,12 @@ if __name__ == '__main__':
                 print('[{}|{}] step:{}/{} loss:{:.4f}'.format(epoch + 1, epoches, i + 1, total_step, loss.item()))
         train_curve.append(sum_loss)
         sum_loss = 0
-    torch.save(bert_blend_cnn.state_dict(), 'bert.pth')
+    torch.save(bert_blend_cnn.state_dict(), 'bert.pkl')
 
     # 使用保存字典的方式进行测试
     # 如果不需要保存模型 删除所有的 bert_blend_cnns 并将pred后面的 bert_blend_cnns 改为 bert_blend_cnn
     bert_blend_cnns = Bert_Blend_CNN().to(device)
-    bert_blend_cnns.load_state_dict(torch.load('bert.pth'))
+    bert_blend_cnns.load_state_dict(torch.load('bert.pkl'))
     bert_blend_cnns.eval()
     with torch.no_grad():
         test_text = ['I hate the rain, come on!']
@@ -180,3 +180,4 @@ if __name__ == '__main__':
 
     pd.DataFrame(train_curve).plot()  # loss曲线
     plt.show()
+
