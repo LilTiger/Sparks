@@ -11,13 +11,12 @@ import torch.nn as nn
 import torch.utils.data as Data
 import torch.nn.functional as F
 import torch.optim as optim
-import transformers
 from transformers import BertModel, BertTokenizer, BertConfig
 import matplotlib.pyplot as plt
 
 train_curve = []
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-config = './bert-custom/config.json'
+# config = './bert-custom/config.json'
 # # 定义一些参数，模型选择了最基础的bert中文模型
 batch_size = 12
 epoches = 100
@@ -113,7 +112,7 @@ class Bert_Blend_CNN(nn.Module):
     def __init__(self):
         super(Bert_Blend_CNN, self).__init__()
         # 注 此处更改了config文件
-        self.bert = BertModel.from_pretrained(model, output_hidden_states=True, return_dict=True, config=config)
+        self.bert = BertModel.from_pretrained(model, output_hidden_states=True, return_dict=True)
         # bert模型中的所有参数 也要参与微调 与 bert+lstm 方法一致
         for param in self.bert.parameters():
             param.requires_grad = True
@@ -139,49 +138,49 @@ class Bert_Blend_CNN(nn.Module):
 
 
 bert_blend_cnn = Bert_Blend_CNN().to(device)
-
-optimizer = optim.Adam(bert_blend_cnn.parameters(), lr=1e-3, weight_decay=1e-2)
-loss_fn = nn.CrossEntropyLoss()
-
-# train
-sum_loss = 0
-total_step = len(train)
-
-if __name__ == '__main__':
-    for epoch in range(epoches):
-        for i, batch in enumerate(train):
-            optimizer.zero_grad()
-            batch = tuple(p.to(device) for p in batch)
-            pred = bert_blend_cnn([batch[0], batch[1], batch[2]])
-            # print(batch[3].shape, pred.shape)
-            loss = loss_fn(pred, batch[3])
-            sum_loss += loss.item()
-
-            loss.backward()
-            optimizer.step()
-            if epoch % 10 == 0:
-                print('[{}|{}] step:{}/{} loss:{:.4f}'.format(epoch + 1, epoches, i + 1, total_step, loss.item()))
-        train_curve.append(sum_loss)
-        sum_loss = 0
-    torch.save(bert_blend_cnn.state_dict(), 'bert.pkl')
-
-    # 使用保存字典的方式进行测试
-    # 如果不需要保存模型 删除所有的 bert_blend_cnns 并将pred后面的 bert_blend_cnns 改为 bert_blend_cnn
-    bert_blend_cnns = Bert_Blend_CNN().to(device)
-    bert_blend_cnns.load_state_dict(torch.load('bert.pkl'))
-    bert_blend_cnns.eval()
-    with torch.no_grad():
-        test_text = ['I hate the rain, come on!']
-        test = MyDataset(test_text, labels=None, with_labels=False)
-        x = test.__getitem__(0)
-        x = tuple(p.unsqueeze(0).to(device) for p in x)
-        pred = bert_blend_cnns([x[0], x[1], x[2]])
-        pred = pred.data.max(dim=1, keepdim=True)[1]
-        if pred[0][0] == 0:
-            print('positive')
-        else:
-            print('negative')
-
-    pd.DataFrame(train_curve).plot()  # loss曲线
-    plt.show()
+print(bert_blend_cnn)
+# optimizer = optim.Adam(bert_blend_cnn.parameters(), lr=1e-3, weight_decay=1e-2)
+# loss_fn = nn.CrossEntropyLoss()
+#
+# # train
+# sum_loss = 0
+# total_step = len(train)
+#
+# if __name__ == '__main__':
+#     for epoch in range(epoches):
+#         for i, batch in enumerate(train):
+#             optimizer.zero_grad()
+#             batch = tuple(p.to(device) for p in batch)
+#             pred = bert_blend_cnn([batch[0], batch[1], batch[2]])
+#             # print(batch[3].shape, pred.shape)
+#             loss = loss_fn(pred, batch[3])
+#             sum_loss += loss.item()
+#
+#             loss.backward()
+#             optimizer.step()
+#             if epoch % 10 == 0:
+#                 print('[{}|{}] step:{}/{} loss:{:.4f}'.format(epoch + 1, epoches, i + 1, total_step, loss.item()))
+#         train_curve.append(sum_loss)
+#         sum_loss = 0
+#     torch.save(bert_blend_cnn.state_dict(), 'bert.pkl')
+#
+#     # 使用保存字典的方式进行测试
+#     # 如果不需要保存模型 删除所有的 bert_blend_cnns 并将pred后面的 bert_blend_cnns 改为 bert_blend_cnn
+#     bert_blend_cnns = Bert_Blend_CNN().to(device)
+#     bert_blend_cnns.load_state_dict(torch.load('bert.pkl'))
+#     bert_blend_cnns.eval()
+#     with torch.no_grad():
+#         test_text = ['I hate the rain, come on!']
+#         test = MyDataset(test_text, labels=None, with_labels=False)
+#         x = test.__getitem__(0)
+#         x = tuple(p.unsqueeze(0).to(device) for p in x)
+#         pred = bert_blend_cnns([x[0], x[1], x[2]])
+#         pred = pred.data.max(dim=1, keepdim=True)[1]
+#         if pred[0][0] == 0:
+#             print('positive')
+#         else:
+#             print('negative')
+#
+#     pd.DataFrame(train_curve).plot()  # loss曲线
+#     plt.show()
 

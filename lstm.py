@@ -141,134 +141,134 @@ n_layers = 2
 bidirectional = True
 # initialize the model
 net = bert_lstm(hidden_dim, output_size, n_layers, bidirectional)
-
-# train
-# loss and optimization functions
-lr = 2e-5
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-epochs = 10
-print_every = 8
-clip = 5  # gradient clipping
-
-# move model to GPU, if available
-if use_cuda:
-    net.cuda()
-net.train()
-# train for some number of epochs
-for e in range(epochs):
-    # initialize hidden state
-    h = net.init_hidden(batch_size)
-    counter = 0
-
-    # batch loop
-    for inputs, labels in train_loader:
-        counter += 1
-        if use_cuda:
-            inputs, labels = inputs.cuda(), labels.cuda()
-        h = tuple([each.data for each in h])
-        net.zero_grad()
-        output = net(inputs, h)
-        loss = criterion(output.squeeze(), labels.long())
-        loss.backward()
-        optimizer.step()
-
-        # loss stats
-        if counter % print_every == 0:
-            net.eval()
-            with torch.no_grad():
-                val_h = net.init_hidden(batch_size)
-                val_losses = []
-                for inputs, labels in valid_loader:
-                    val_h = tuple([each.data for each in val_h])
-
-                    if use_cuda:
-                        inputs, labels = inputs.cuda(), labels.cuda()
-
-                    output = net(inputs, val_h)
-                    val_loss = criterion(output.squeeze(), labels.long())
-                    val_losses.append(val_loss.item())
-
-            net.train()
-            print("Epoch: {}/{}...".format(e + 1, epochs),
-                  "Step: {}...".format(counter),
-                  "Loss: {:.6f}...".format(loss.item()),
-                  "Val Loss: {:.6f}".format(np.mean(val_losses)))
-
-
-# test
-test_losses = []  # track loss
-num_correct = 0
-
-# init hidden state
-h = net.init_hidden(batch_size)
-
-net.eval()
-# iterate over test data
-for inputs, labels in test_loader:
-    h = tuple([each.data for each in h])
-    if use_cuda:
-        inputs, labels = inputs.cuda(), labels.cuda()
-    output = net(inputs, h)
-    test_loss = criterion(output.squeeze(), labels.long())
-    test_losses.append(test_loss.item())
-    output = torch.nn.Softmax(dim=1)(output)
-    pred = torch.max(output, 1)[1]
-
-    # compare predictions to true label
-    correct_tensor = pred.eq(labels.float().view_as(pred))
-    correct = np.squeeze(correct_tensor.numpy()) if not use_cuda else np.squeeze(correct_tensor.cpu().numpy())
-    num_correct += np.sum(correct)
-
-print("Test loss: {:.3f}".format(np.mean(test_losses)))
-
-# accuracy over all test data
-test_acc = num_correct / len(test_loader.dataset)
-print("Test accuracy: {:.3f}".format(test_acc))
-
-torch.save(net.state_dict(), 'sentiment.pth')
-
-
-# 若想要使用保存的模型测试 利用如下代码再次复现一个相同的 net 即可
-output_size = 2  # 此处为分类 类别数
-hidden_dim = 384   # 768/2
-n_layers = 2
-bidirectional = True
-
-net = bert_lstm(hidden_dim, output_size, n_layers, bidirectional)
-net.load_state_dict(torch.load('sentiment.pth'))
-
-
-def predict(net, test_comments):
-    result_comments = pretreatment(test_comments)  # 预处理去掉标点符号
-    # 转换为字id
-    tokenizer = BertTokenizer.from_pretrained(model_path)
-    result_comments_id = tokenizer(result_comments, padding=True, truncation=True, max_length=120, return_tensors='pt')
-    tokenizer_id = result_comments_id['input_ids']
-    inputs = tokenizer_id
-    batch_size = inputs.size(0)
-
-    # initialize hidden state
-    h = net.init_hidden(batch_size)
-
-    if use_cuda:
-        inputs = inputs.cuda()
-
-    net.eval()
-    with torch.no_grad():
-        # get the output from the model
-        output = net(inputs, h)
-        output = torch.nn.Softmax(dim=1)(output)
-        pred = torch.max(output, 1)[1]
-        # printing output value, before rounding
-        # print('预测概率为: {:.6f}'.format(output.item()))
-        if pred.item() == 1:
-            print("预测结果为:正向")
-        else:
-            print("预测结果为:负向")
-
-
-if use_cuda:
-    net.cuda()
-comment1 = ['菜品一般，不好吃']
-predict(net, comment1)
+print(net)
+# # train
+# # loss and optimization functions
+# lr = 2e-5
+# criterion = nn.CrossEntropyLoss()
+# optimizer = torch.optim.Adam(net.parameters(), lr=lr)
+# epochs = 10
+# print_every = 8
+# clip = 5  # gradient clipping
+#
+# # move model to GPU, if available
+# if use_cuda:
+#     net.cuda()
+# net.train()
+# # train for some number of epochs
+# for e in range(epochs):
+#     # initialize hidden state
+#     h = net.init_hidden(batch_size)
+#     counter = 0
+#
+#     # batch loop
+#     for inputs, labels in train_loader:
+#         counter += 1
+#         if use_cuda:
+#             inputs, labels = inputs.cuda(), labels.cuda()
+#         h = tuple([each.data for each in h])
+#         net.zero_grad()
+#         output = net(inputs, h)
+#         loss = criterion(output.squeeze(), labels.long())
+#         loss.backward()
+#         optimizer.step()
+#
+#         # loss stats
+#         if counter % print_every == 0:
+#             net.eval()
+#             with torch.no_grad():
+#                 val_h = net.init_hidden(batch_size)
+#                 val_losses = []
+#                 for inputs, labels in valid_loader:
+#                     val_h = tuple([each.data for each in val_h])
+#
+#                     if use_cuda:
+#                         inputs, labels = inputs.cuda(), labels.cuda()
+#
+#                     output = net(inputs, val_h)
+#                     val_loss = criterion(output.squeeze(), labels.long())
+#                     val_losses.append(val_loss.item())
+#
+#             net.train()
+#             print("Epoch: {}/{}...".format(e + 1, epochs),
+#                   "Step: {}...".format(counter),
+#                   "Loss: {:.6f}...".format(loss.item()),
+#                   "Val Loss: {:.6f}".format(np.mean(val_losses)))
+#
+#
+# # test
+# test_losses = []  # track loss
+# num_correct = 0
+#
+# # init hidden state
+# h = net.init_hidden(batch_size)
+#
+# net.eval()
+# # iterate over test data
+# for inputs, labels in test_loader:
+#     h = tuple([each.data for each in h])
+#     if use_cuda:
+#         inputs, labels = inputs.cuda(), labels.cuda()
+#     output = net(inputs, h)
+#     test_loss = criterion(output.squeeze(), labels.long())
+#     test_losses.append(test_loss.item())
+#     output = torch.nn.Softmax(dim=1)(output)
+#     pred = torch.max(output, 1)[1]
+#
+#     # compare predictions to true label
+#     correct_tensor = pred.eq(labels.float().view_as(pred))
+#     correct = np.squeeze(correct_tensor.numpy()) if not use_cuda else np.squeeze(correct_tensor.cpu().numpy())
+#     num_correct += np.sum(correct)
+#
+# print("Test loss: {:.3f}".format(np.mean(test_losses)))
+#
+# # accuracy over all test data
+# test_acc = num_correct / len(test_loader.dataset)
+# print("Test accuracy: {:.3f}".format(test_acc))
+#
+# torch.save(net.state_dict(), 'sentiment.pth')
+#
+#
+# # 若想要使用保存的模型测试 利用如下代码再次复现一个相同的 net 即可
+# output_size = 2  # 此处为分类 类别数
+# hidden_dim = 384   # 768/2
+# n_layers = 2
+# bidirectional = True
+#
+# net = bert_lstm(hidden_dim, output_size, n_layers, bidirectional)
+# net.load_state_dict(torch.load('sentiment.pth'))
+#
+#
+# def predict(net, test_comments):
+#     result_comments = pretreatment(test_comments)  # 预处理去掉标点符号
+#     # 转换为字id
+#     tokenizer = BertTokenizer.from_pretrained(model_path)
+#     result_comments_id = tokenizer(result_comments, padding=True, truncation=True, max_length=120, return_tensors='pt')
+#     tokenizer_id = result_comments_id['input_ids']
+#     inputs = tokenizer_id
+#     batch_size = inputs.size(0)
+#
+#     # initialize hidden state
+#     h = net.init_hidden(batch_size)
+#
+#     if use_cuda:
+#         inputs = inputs.cuda()
+#
+#     net.eval()
+#     with torch.no_grad():
+#         # get the output from the model
+#         output = net(inputs, h)
+#         output = torch.nn.Softmax(dim=1)(output)
+#         pred = torch.max(output, 1)[1]
+#         # printing output value, before rounding
+#         # print('预测概率为: {:.6f}'.format(output.item()))
+#         if pred.item() == 1:
+#             print("预测结果为:正向")
+#         else:
+#             print("预测结果为:负向")
+#
+#
+# if use_cuda:
+#     net.cuda()
+# comment1 = ['菜品一般，不好吃']
+# predict(net, comment1)

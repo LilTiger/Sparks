@@ -24,3 +24,7 @@ tape-eval transformer secondary_structure pretrained_models/valid --metrics accu
 
 tape-train transformer secondary_structure --num_workers 0 --batch_size 1
 
+# manifold 绘图时
+
+只改变label和变量的关系 不会改变图的形状 适用于图形轮廓已确定的情况
+label和变量建立关系 变量之间建立关系 拟合效果最好
