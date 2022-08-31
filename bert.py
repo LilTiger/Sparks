@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.utils.data as Data
 import torch.nn.functional as F
 import torch.optim as optim
-from transformers import BertModel, BertTokenizer, BertConfig
+from transformer import BertModel, BertTokenizer, BertConfig
 import matplotlib.pyplot as plt
 
 train_curve = []

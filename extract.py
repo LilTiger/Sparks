@@ -4,16 +4,19 @@
 #
 # id_fa = []
 # id_sf = []
+# cl_list = []
 # cf_list = []
 # sf_list = []
 # fa_list = []
 #
-# with open('scop-cla-latest.txt', 'r+') as fd:
+# with open('data/scop-cla-latest.txt', 'r+') as fd:
 #     for text in fd.readlines():
 #         id_fa.append(text.split(' ')[0])
 #         id_sf.append(text.split(' ')[5])
 #         scop = text.strip().split(' ')[10].split(',')
-#         # 继续在scop中提取CF SF FA
+#         # 继续在scop中提取CL CF SF FA
+#         scop_cl = scop[1].split('=')[1]
+#         cl_list.append(scop_cl)
 #         scop_cf = scop[2].split('=')[1]
 #         cf_list.append(scop_cf)
 #         scop_sf = scop[3].split('=')[1]
@@ -21,8 +24,8 @@
 #         scop_fa = scop[4].split('=')[1]
 #         fa_list.append(scop_fa)
 #         print(scop)
-# df = pd.DataFrame({'Family_id': id_fa, 'SuperFamily_id': id_sf, 'Sequence': '', 'CF': cf_list, 'SF': sf_list, 'FA': fa_list})
-# df.to_csv('protein_pre.csv')
+# df = pd.DataFrame({'Family_id': id_fa, 'SuperFamily_id': id_sf, 'Sequence': '', 'CL': cl_list, 'CF': cf_list, 'SF': sf_list, 'FA': fa_list})
+# df.to_csv('data/protein_pre.csv')
 # print(df)
 
 # 寻找家族id对应sequence
@@ -31,14 +34,14 @@ import csv
 import numpy as np
 import tqdm
 
-csv_file = open('protein_pre.csv')
+csv_file = open('data/protein_pre.csv')
 reader = csv.reader(csv_file)
 # read_csv方法默认会在开头加入新的unnamed列 设置index_col=0可以避免此现象
-df = pd.read_csv('protein_pre.csv', index_col=0)
+df = pd.read_csv('data/protein_pre.csv', index_col=0)
 
 # 将id和sequence合并到一行 生成新列表 便于后续匹配
 new = []
-with open('scop_sf_represeq_lib_latest.fa.txt') as fd:
+with open('data/scop_sf_represeq_lib_latest.fa.txt') as fd:
     lines = fd.readlines()
     for i in range(lines.__len__()):
         if i % 2 == 0:
@@ -58,6 +61,6 @@ for item in tqdm.tqdm(reader):
             # print(df)
             # 找到之后及时跳出循环
             break
-df.to_csv('protein.csv')
+df.to_csv('data/protein.csv')
 
 

@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
-from transformers import BertTokenizer, BertModel
+from transformer import BertTokenizer, BertModel
 from sklearn.model_selection import train_test_split
 
 # batch_size / print_every

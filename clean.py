@@ -4,15 +4,15 @@ import tqdm
 import json
 
 # read_csv方法默认会在开头加入新的unnamed列 设置index_col=0可以避免此现象
-df = pd.read_csv('protein.csv', index_col=0)
+df = pd.read_csv('data/protein.csv', index_col=0)
 # 重复的sequence数量和列表
 n = 0
 duplicate = []
 
-with open("remote_homology_test_fold_holdout.json", 'r') as fp:
+with open("data/remote_homology_test_fold_holdout.json", 'r') as fp:
     json_data = json.load(fp)
 
-    for index_1, row in tqdm.tqdm(df.iterrows()):
+    for index_1 in tqdm.tqdm(range(0, len(df))):
         # sequence = df['Sequence'].to_list()
         a = df.loc[index_1, 'Sequence']
         for index_2 in range(json_data.__len__()):
@@ -23,4 +23,4 @@ with open("remote_homology_test_fold_holdout.json", 'r') as fp:
                 n += 1
 
 print(n)
-df.to_csv('protein_cleaned.csv', index=None)
+df.to_csv('data/protein_cleaned.csv', index=None)
