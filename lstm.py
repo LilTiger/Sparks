@@ -18,7 +18,7 @@ if use_cuda:
     print('using cuda device')
 
 data = pd.read_csv('./dianping.csv', encoding='utf-8')
-model_path = "pretrained_models/bert-base-cased"
+model_path = "bert-base-cased"
 
 torch.cuda.empty_cache()
 # 首先处理数据

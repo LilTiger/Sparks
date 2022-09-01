@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.utils.data as Data
 import torch.nn.functional as F
 import torch.optim as optim
-from transformer import BertModel, BertTokenizer, BertConfig
+from transformers import BertModel, BertTokenizer, BertConfig
 import matplotlib.pyplot as plt
 
 train_curve = []
@@ -20,7 +20,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # # 定义一些参数，模型选择了最基础的bert中文模型
 batch_size = 12
 epoches = 100
-model = "./pretrained_models/bert-base-cased"
+model = "bert-base-cased"
 hidden_size = 768
 n_class = 2
 maxlen = 8

@@ -24,7 +24,7 @@
 #         scop_fa = scop[4].split('=')[1]
 #         fa_list.append(scop_fa)
 #         print(scop)
-# df = pd.DataFrame({'Family_id': id_fa, 'SuperFamily_id': id_sf, 'Sequence': '', 'CL': cl_list, 'CF': cf_list, 'SF': sf_list, 'FA': fa_list})
+# df = pd.DataFrame({'FA-DOMID': id_fa, 'SF-DOMID': id_sf, 'Sequence': '', 'CL': cl_list, 'CF': cf_list, 'SF': sf_list, 'FA': fa_list})
 # df.to_csv('data/protein_pre.csv')
 # print(df)
 
