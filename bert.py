@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
-# bert融合textcnn思想的Bert+Blend-CNN
-# model: Bert+Blend-CNN
-# date: 2021.10.11 18:06:11
+# bert文本分类baseline模型
+# model: bert
+# date: 2021.10.10 10:01
 
 import os
 import numpy as np
@@ -9,40 +9,39 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.utils.data as Data
-import torch.nn.functional as F
 import torch.optim as optim
-from transformers import BertModel, BertTokenizer, BertConfig
+import transformers
+from transformers import AutoModel, AutoTokenizer
 import matplotlib.pyplot as plt
 
 train_curve = []
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# config = './bert-custom/config.json'
-# # 定义一些参数，模型选择了最基础的bert中文模型
-batch_size = 12
+
+batch_size = 8
 epoches = 100
 model = "bert-base-cased"
 hidden_size = 768
-n_class = 5
+n_class = 1991
 maxlen = 8
 
-encode_layer = 12
-filter_sizes = [2, 2, 2]
-num_filters = 3
-
-csv_data = pd.read_csv('data/protein_cleaned.csv')
+csv_data = pd.read_csv('data/protein.csv')
 df = pd.DataFrame(csv_data)
-# data
-sentences = df['Sequence']
-labels = df['CL']  # 1积极, 0消极.
 
+sentences = df['Sequence'].tolist()
+labels = df['CFF'].tolist()
+
+# word_list = ' '.join(sentences).split()
+# word_list = list(set(word_list))
+# word_dict = {w: i for i, w in enumerate(word_list)}
+# num_dict = {i: w for w, i in word_dict.items()}
+# vocab_size = len(word_list)
 
 class MyDataset(Data.Dataset):
     def __init__(self, sentences, labels=None, with_labels=True, ):
-        self.tokenizer = BertTokenizer.from_pretrained(model)
-        # 此处添加氨基酸序列分词结构
-        self.tokenizer.add_special_tokens({'additional_special_tokens': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
-                                                                         'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
-                                                                         'T', 'U', 'V', 'W', 'X', 'Y', 'Z']})
+        self.tokenizer = AutoTokenizer.from_pretrained(model)
+        self.tokenizer.add_special_tokens(
+            {'additional_special_tokens': ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M',
+                                           'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']})
         self.with_labels = with_labels
         self.sentences = sentences
         self.labels = labels
@@ -77,113 +76,60 @@ class MyDataset(Data.Dataset):
 train = Data.DataLoader(dataset=MyDataset(sentences, labels), batch_size=batch_size, shuffle=True)
 
 
-class TextCNN(nn.Module):
-    def __init__(self):
-        super(TextCNN, self).__init__()
-        self.num_filter_total = num_filters * len(filter_sizes)
-        self.Weight = nn.Linear(self.num_filter_total, n_class, bias=False)
-        self.bias = nn.Parameter(torch.ones([n_class]))
-        self.filter_list = nn.ModuleList([
-            nn.Conv2d(1, num_filters, kernel_size=(size, hidden_size)) for size in filter_sizes
-        ])
-
-    def forward(self, x):
-        # x: [bs, seq, hidden]
-        x = x.unsqueeze(1)  # [bs, channel=1, seq, hidden]
-
-        pooled_outputs = []
-        for i, conv in enumerate(self.filter_list):
-            h = F.relu(conv(x))  # [bs, channel=1, seq-kernel_size+1, 1]
-            mp = nn.MaxPool2d(
-                kernel_size=(encode_layer - filter_sizes[i] + 1, 1)
-            )
-            # mp: [bs, channel=3, w, h]
-            pooled = mp(h).permute(0, 3, 2, 1)  # [bs, h=1, w=1, channel=3]
-            pooled_outputs.append(pooled)
-
-        h_pool = torch.cat(pooled_outputs, len(filter_sizes))  # [bs, h=1, w=1, channel=3 * 3]
-        h_pool_flat = torch.reshape(h_pool, [-1, self.num_filter_total])
-
-        output = self.Weight(h_pool_flat) + self.bias  # [bs, n_class]
-
-        return output
-
-
 # model
-class Bert_Blend_CNN(nn.Module):
+class BertClassify(nn.Module):
     def __init__(self):
-        super(Bert_Blend_CNN, self).__init__()
-        # 注 此处更改了config文件
-        self.bert = BertModel.from_pretrained(model, output_hidden_states=True, return_dict=True)
-        # bert模型中的所有参数 也要参与微调 与 bert+lstm 方法一致
-        for param in self.bert.parameters():
-            param.requires_grad = True
-
+        super(BertClassify, self).__init__()
+        self.bert = AutoModel.from_pretrained(model, output_hidden_states=True, return_dict=True)
         self.linear = nn.Linear(hidden_size, n_class)
-        self.textcnn = TextCNN()
+        self.dropout = nn.Dropout(0.5)
 
     def forward(self, X):
         input_ids, attention_mask, token_type_ids = X[0], X[1], X[2]
         outputs = self.bert(input_ids=input_ids, attention_mask=attention_mask,
                             token_type_ids=token_type_ids)  # 返回一个output字典
-        # 取每一层encode出来的向量
+        # 用最后一层cls向量做分类
         # outputs.pooler_output: [bs, hidden_size]
-        hidden_states = outputs.hidden_states  # 13*[bs, seq_len, hidden] 第一层是embedding层不需要
-        cls_embeddings = hidden_states[1][:, 0, :].unsqueeze(1)  # [bs, 1, hidden]
-        # 将每一层的第一个token(cls向量)提取出来，拼在一起当作textcnn的输入
-        for i in range(2, 13):
-            # squeeze和unsqueeze只对 维度为1 的维度进行操作 函数内的参数为需要压缩或扩增的 维度所在位置
-            cls_embeddings = torch.cat((cls_embeddings, hidden_states[i][:, 0, :].unsqueeze(1)), dim=1)
-        # cls_embeddings: [bs, encode_layer=12, hidden]
-        logits = self.textcnn(cls_embeddings)
+        logits = self.linear(self.dropout(outputs.pooler_output))
+
         return logits
 
 
-bert_blend_cnn = Bert_Blend_CNN().to(device)
-# print("Total number of paramerters in networks is {}  ".format(sum(x.numel() for x in bert_blend_cnn.parameters())))
-print(bert_blend_cnn)
-optimizer = optim.Adam(bert_blend_cnn.parameters(), lr=1e-3, weight_decay=1e-2)
+bc = BertClassify().to(device)
+
+optimizer = optim.Adam(bc.parameters(), lr=1e-3, weight_decay=1e-2)
 loss_fn = nn.CrossEntropyLoss()
 
 # train
 sum_loss = 0
 total_step = len(train)
+for epoch in range(epoches):
+    for i, batch in enumerate(train):
+        optimizer.zero_grad()
+        batch = tuple(p.to(device) for p in batch)
+        pred = bc([batch[0], batch[1], batch[2]])
+        loss = loss_fn(pred, batch[3])
+        sum_loss += loss.item()
 
-if __name__ == '__main__':
-    for epoch in range(epoches):
-        for i, batch in enumerate(train):
-            optimizer.zero_grad()
-            batch = tuple(p.to(device) for p in batch)
-            pred = bert_blend_cnn([batch[0], batch[1], batch[2]])
-            # print(batch[3].shape, pred.shape)
-            loss = loss_fn(pred, batch[3])
-            sum_loss += loss.item()
+        loss.backward()
+        optimizer.step()
+        if epoch % 10 == 0:
+            print('[{}|{}] step:{}/{} loss:{:.4f}'.format(epoch + 1, epoches, i + 1, total_step, loss.item()))
+    train_curve.append(sum_loss)
+    sum_loss = 0
 
-            loss.backward()
-            optimizer.step()
-            if epoch % 10 == 0:
-                print('[{}|{}] step:{}/{} loss:{:.4f}'.format(epoch + 1, epoches, i + 1, total_step, loss.item()))
-        train_curve.append(sum_loss)
-        sum_loss = 0
-    torch.save(bert_blend_cnn.state_dict(), 'bert.pkl')
+# test
+bc.eval()
+with torch.no_grad():
+    test_text = ['我不喜欢打篮球']
+    test = MyDataset(test_text, labels=None, with_labels=False)
+    x = test.__getitem__(0)
+    x = tuple(p.unsqueeze(0).to(device) for p in x)
+    pred = bc([x[0], x[1], x[2]])
+    pred = pred.data.max(dim=1, keepdim=True)[1]
+    if pred[0][0] == 0:
+        print('消极')
+    else:
+        print('积极')
 
-    # 使用保存字典的方式进行测试
-    # 如果不需要保存模型 删除所有的 bert_blend_cnns 并将pred后面的 bert_blend_cnns 改为 bert_blend_cnn
-    bert_blend_cnns = Bert_Blend_CNN().to(device)
-    bert_blend_cnns.load_state_dict(torch.load('bert.pkl'))
-    bert_blend_cnns.eval()
-    with torch.no_grad():
-        test_text = ['I hate the rain, come on!']
-        test = MyDataset(test_text, labels=None, with_labels=False)
-        x = test.__getitem__(0)
-        x = tuple(p.unsqueeze(0).to(device) for p in x)
-        pred = bert_blend_cnns([x[0], x[1], x[2]])
-        pred = pred.data.max(dim=1, keepdim=True)[1]
-        if pred[0][0] == 0:
-            print('positive')
-        else:
-            print('negative')
-
-    pd.DataFrame(train_curve).plot()  # loss曲线
-    plt.show()
-
+pd.DataFrame(train_curve).plot()  # loss曲线
